@@ -17,7 +17,7 @@ import static org.hamcrest.Matchers.*;
 
 public class ProductControllerRA {
 
-    private Long existingProductId, nonExistingProductId;
+    private Long existingProductId, nonExistingProductId, dependentProductId;
     private String productName;
     private Map<String, Object> postProductInstance;
     private String clientUsername, clientPassword, adminUsername, adminPassword;
@@ -108,7 +108,7 @@ public class ProductControllerRA {
                 .accept(ContentType.JSON)
                 .when().post("/products")
                 .then().statusCode(201)
-                .body("name",  equalTo("Produto novo"))
+                .body("name", equalTo("Produto novo"))
                 .body("price", is(200.0f))
                 .body("imgUrl", equalTo("https://raw.githubusercontent.com/devsuperior/dscatalog-resources/master/backend/img/1-big.jpg"))
                 .body("categories.id", hasItems(2, 3));
@@ -128,7 +128,7 @@ public class ProductControllerRA {
                 .accept(ContentType.JSON)
                 .when().post("/products")
                 .then().statusCode(422)
-                .body("errors.message[0]",  equalTo("Required 3 to 80 characters"));
+                .body("errors.message[0]", equalTo("Required 3 to 80 characters"));
     }
 
     @Test
@@ -144,7 +144,7 @@ public class ProductControllerRA {
                 .accept(ContentType.JSON)
                 .when().post("/products")
                 .then().statusCode(422)
-                .body("errors.message[0]",  equalTo("The description must be at least 10 characters long."));
+                .body("errors.message[0]", equalTo("The description must be at least 10 characters long."));
     }
 
     @Test
@@ -160,7 +160,7 @@ public class ProductControllerRA {
                 .accept(ContentType.JSON)
                 .when().post("/products")
                 .then().statusCode(422)
-                .body("errors.message[0]",  equalTo("Required positive price"));
+                .body("errors.message[0]", equalTo("Required positive price"));
     }
 
     @Test
@@ -176,7 +176,7 @@ public class ProductControllerRA {
                 .accept(ContentType.JSON)
                 .when().post("/products")
                 .then().statusCode(422)
-                .body("errors.message[0]",  equalTo("Required positive price"));
+                .body("errors.message[0]", equalTo("Required positive price"));
     }
 
     @Test
@@ -192,7 +192,7 @@ public class ProductControllerRA {
                 .accept(ContentType.JSON)
                 .when().post("/products")
                 .then().statusCode(422)
-                .body("errors.message[0]",  equalTo("At least one category is required."));
+                .body("errors.message[0]", equalTo("At least one category is required."));
     }
 
     @Test
@@ -218,6 +218,53 @@ public class ProductControllerRA {
                 .contentType(ContentType.JSON)
                 .accept(ContentType.JSON)
                 .when().post("/products")
+                .then().statusCode(401);
+    }
+
+    @Test
+    public void deleteShouldReturnNoContentWhenIdExistsAndAdminLogged() {
+        existingProductId = 25L;
+
+        given().header("Authorization", "Bearer " + adminToken)
+                .when().delete("/products/{id}", existingProductId)
+                .then().statusCode(204);
+    }
+
+    @Test
+    public void deleteShouldReturnNotFoundWhenIdDoesNotExistAndAdminLogged() {
+        nonExistingProductId = 100L;
+
+        given().header("Authorization", "Bearer " + adminToken)
+                .when().delete("/products/{id}", nonExistingProductId)
+                .then().statusCode(404)
+                .body("error", equalTo("Resource not found!"))
+                .body("status", equalTo(404));
+    }
+
+    @Test
+    public void deleteShouldReturnConflictWhenDependentIdAndAdminLogged() {
+        dependentProductId = 3L;
+
+        given().header("Authorization", "Bearer " + adminToken)
+                .when().delete("/products/{id}", dependentProductId)
+                .then().statusCode(409);
+    }
+
+    @Test
+    public void deleteShouldReturnForbiddenWhenClientLogged() {
+        existingProductId = 3L;
+
+        given().header("Authorization", "Bearer " + clientToken)
+                .when().delete("/products/{id}", existingProductId)
+                .then().statusCode(403);
+    }
+
+    @Test
+    public void deleteShouldReturnUnauthorizedWhenInvalidToken() {
+        existingProductId = 3L;
+
+        given().header("Authorization", "Bearer " + invalidToken)
+                .when().delete("/products/{id}", existingProductId)
                 .then().statusCode(401);
     }
 }
