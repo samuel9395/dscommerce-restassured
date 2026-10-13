@@ -1,4 +1,4 @@
-package devsuperior.dscommerce.controllers;
+package com.devsuperior.dscommerce.controllers;
 
 import com.devsuperior.dscommerce.tests.TokenUtil;
 import io.restassured.http.ContentType;
