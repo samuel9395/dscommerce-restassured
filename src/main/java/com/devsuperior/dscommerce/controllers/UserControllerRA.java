@@ -57,7 +57,7 @@ public class UserControllerRA {
                 .body("name", equalTo("Alex Green"))
                 .body("email", equalTo("alex@gmail.com"))
                 .body("phone", equalTo("977777777"))
-                .body("roles", hasItems("ROLE_ADMIN", "ROLE_CLIENT"))
+                .body("roles", hasItems("ROLE_ADMIN"))
                 .body("brithDate", equalTo("1987-12-13"));
     }
 

@@ -267,4 +267,152 @@ public class ProductControllerRA {
                 .when().delete("/products/{id}", existingProductId)
                 .then().statusCode(401);
     }
+
+    @Test
+    public void updateShoulReturnProductWhenAdminLogged() {
+        existingProductId = 1L;
+
+        postProductInstance.put("price", "500.0f");
+        // converte em json para inserir novo produto
+        JSONObject newProduct = new JSONObject(postProductInstance);
+
+        given().header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + adminToken)
+                .body(newProduct)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .when().put("/products/{id}", existingProductId)
+                .then().statusCode(200)
+                .body("price", is(500.0f));
+    }
+
+    @Test
+    public void updateShoulReturnNotFoundWhenAdminLogged() {
+        nonExistingProductId = 100L;
+        // converte em json para inserir novo produto
+        JSONObject newProduct = new JSONObject(postProductInstance);
+
+        given().header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + adminToken)
+                .body(newProduct)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .when().put("/products/{id}", nonExistingProductId)
+                .then().statusCode(404);
+    }
+
+    @Test
+    public void updateShoulReturnUnprocessableEntityWhenAdminLogged() {
+        postProductInstance.put("name", "ab");
+        existingProductId = 2L;
+        // converte em json para inserir novo produto
+        JSONObject newProduct = new JSONObject(postProductInstance);
+
+        given().header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + adminToken)
+                .body(newProduct)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .when().put("/products/{id}", existingProductId)
+                .then().statusCode(422)
+                .body("errors.message[0]", equalTo("Required 3 to 80 characters"));
+    }
+
+    @Test
+    public void updateShoulReturnUnprocessableEntityWhenDescriptionIsInvalid() {
+        postProductInstance.put("description", "ab");
+        existingProductId = 3L;
+        // converte em json para inserir novo produto
+        JSONObject newProduct = new JSONObject(postProductInstance);
+
+        given().header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + adminToken)
+                .body(newProduct)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .when().put("/products/{id}", existingProductId)
+                .then().statusCode(422)
+                .body("errors.message[0]", equalTo("The description must be at least 10 characters long."));
+    }
+
+    @Test
+    public void updateShoulReturnUnprocessableEntityWhenPriceIsNegative() {
+        postProductInstance.put("price", -10.0f);
+        existingProductId = 4L;
+        // converte em json para inserir novo produto
+        JSONObject newProduct = new JSONObject(postProductInstance);
+
+        given().header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + adminToken)
+                .body(newProduct)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .when().put("/products/{id}", existingProductId)
+                .then().statusCode(422)
+                .body("errors.message[0]", equalTo("Required positive price"));
+    }
+
+    @Test
+    public void updateShoulReturnUnprocessableEntityWhenPriceIsZero() {
+        postProductInstance.put("price", 0.0f);
+        existingProductId = 5L;
+        // converte em json para inserir novo produto
+        JSONObject newProduct = new JSONObject(postProductInstance);
+
+        given().header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + adminToken)
+                .body(newProduct)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .when().put("/products/{id}", existingProductId)
+                .then().statusCode(422)
+                .body("errors.message[0]", equalTo("Required positive price"));
+    }
+
+    @Test
+    public void updateShoulReturnUnprocessableEntityWhenAdminLoggedAndHasNoCategory() {
+        postProductInstance.put("categories", null);
+        existingProductId = 6L;
+        // converte em json para inserir novo produto
+        JSONObject newProduct = new JSONObject(postProductInstance);
+
+        given().header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + adminToken)
+                .body(newProduct)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .when().put("/products/{id}", existingProductId)
+                .then().statusCode(422)
+                .body("errors.message[0]", equalTo("At least one category is required."));
+    }
+
+    @Test
+    public void updateShoulReturnForbiddenWhenClientLogged() {
+        existingProductId = 7L;
+        // converte em json para inserir novo produto
+        JSONObject newProduct = new JSONObject(postProductInstance);
+
+        given().header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + clientToken)
+                .body(newProduct)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .when().put("/products/{id}", existingProductId)
+                .then().statusCode(403);
+    }
+
+    @Test
+    public void updateShoulReturnUnauthorizedWhenClientLogged() {
+        existingProductId = 8L;
+        // converte em json para inserir novo produto
+        JSONObject newProduct = new JSONObject(postProductInstance);
+
+        given().header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + invalidToken)
+                .body(newProduct)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .when().put("/products/{id}", existingProductId)
+                .then().statusCode(401);
+    }
 }
