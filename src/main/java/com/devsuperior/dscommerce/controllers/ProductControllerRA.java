@@ -1,5 +1,6 @@
 package devsuperior.dscommerce.controllers;
 
+import com.devsuperior.dscommerce.tests.TokenUtil;
 import io.restassured.http.ContentType;
 import org.json.simple.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +20,8 @@ public class ProductControllerRA {
     private Long existingProductId, nonExistingProductId;
     private String productName;
     private Map<String, Object> postProductInstance;
+    private String clientUsername, clientPassword, adminUsername, adminPassword;
+    private String clientToken, adminToken, invalidToken;
 
     @BeforeEach
     public void setUp() {
@@ -39,6 +42,15 @@ public class ProductControllerRA {
         categories.add(category1);
         categories.add(category2);
         postProductInstance.put("categories", categories);
+
+        clientUsername = "maria@gmail.com";
+        clientPassword = "123456";
+        adminUsername = "alex@gmail.com";
+        adminPassword = "123456";
+
+        clientToken = TokenUtil.obtainAccessToken(clientUsername, clientPassword);
+        adminToken = TokenUtil.obtainAccessToken(adminUsername, adminPassword);
+        invalidToken = "invalidToken";
     }
 
     @Test
@@ -88,7 +100,6 @@ public class ProductControllerRA {
     public void insertShoulReturnProductCreatedWhenAdminLogged() {
         // converte em json para inserir novo produto
         JSONObject newProduct = new JSONObject(postProductInstance);
-        String adminToken = "";
 
         given().header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + adminToken)
