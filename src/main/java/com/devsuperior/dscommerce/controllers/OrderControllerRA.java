@@ -2,8 +2,14 @@ package com.devsuperior.dscommerce.controllers;
 
 import com.devsuperior.dscommerce.tests.TokenUtil;
 import io.restassured.http.ContentType;
+import org.json.simple.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static io.restassured.RestAssured.baseURI;
 import static io.restassured.RestAssured.given;
@@ -14,6 +20,7 @@ public class OrderControllerRA {
     private String clientUsername, clientPassword, adminUsername, adminPassword;
     private String clientToken, adminToken, invalidToken;
     private Long existingOrderId, nonExistingOrderId;
+    private Map<String, Object> postOrderInstance;
 
     @BeforeEach
     public void setUp() {
@@ -31,6 +38,22 @@ public class OrderControllerRA {
 
         existingOrderId = 1L;
         nonExistingOrderId = 1000L;
+
+        // inicializa a instância antes de popular os dados
+        postOrderInstance = new HashMap<>();
+
+        List<Map<String, Object>> items = new ArrayList<>();
+        Map<String, Object> item1 = new HashMap<>();
+        item1.put("productId", 1);
+        item1.put("quantity", 2);
+
+        Map<String, Object> item2 = new HashMap<>();
+        item2.put("productId", 3);
+        item2.put("quantity", 1);
+
+        items.add(item1);
+        items.add(item2);
+        postOrderInstance.put("items", items);
 
     }
 
@@ -129,5 +152,62 @@ public class OrderControllerRA {
                 .get("/orders/{id}", nonExistingOrderId)
                 .then()
                 .statusCode(401);
+    }
+
+    @Test
+    public void insertShouldReturnOrderCreateWhenClientLogged() {
+        JSONObject newProduct = new JSONObject(postOrderInstance);
+
+        given().header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + clientToken)
+                .body(newProduct)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .when().post("/orders")
+                .then().statusCode(201)
+                .body("items.productId", hasItems(1, 3))
+                .body("items.name", hasItems("The Lord of the Rings", "Macbook Pro"));
+    }
+
+    @Test
+    public void insertShouldReturnUnprocessableEntityWhenClientLogged() {
+        postOrderInstance.put("items", new ArrayList<>()); // Remove all items from the order
+
+        JSONObject newProduct = new JSONObject(postOrderInstance);
+
+        given().header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + clientToken)
+                .body(newProduct)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .when().post("/orders")
+                .then().statusCode(422)
+            .body("errors.message[0]", equalTo("Deve ter pelo menos um pedido no item"));
+    }
+
+    @Test
+    public void insertShouldReturnForbiddenWhenAdminLogged() {
+        JSONObject newProduct = new JSONObject(postOrderInstance);
+
+        given().header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + adminToken)
+                .body(newProduct)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .when().post("/orders")
+                .then().statusCode(403);
+    }
+
+    @Test
+    public void insertShouldReturnUnauthorizedWhenInvalidToken() {
+        JSONObject newProduct = new JSONObject(postOrderInstance);
+
+        given().header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + invalidToken)
+                .body(newProduct)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .when().post("/orders")
+                .then().statusCode(401);
     }
 }
